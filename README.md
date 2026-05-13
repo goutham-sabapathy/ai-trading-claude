@@ -293,9 +293,59 @@ ai-trading-claude/
 
 ---
 
+## Changelog
+
+### v1.1.0 — 2026-05-13 — Backtest, Sector Correlation, Position Awareness
+
+Major enhancements to four core skills (`trade-earnings`, `trade-options`, `trade-watchlist`, `trade-analyze`) motivated by gaps identified in real-world usage. **+192 lines added** across the skill toolkit.
+
+**`trade-earnings`** — Mandatory 8-quarter backtest and structural pattern detection:
+- New **8-quarter historical table** with mandatory `Beat Implied?` column (✅ if actual > implied, ❌ otherwise) — drives long-vs-short premium decision
+- New **Phase 3.5: Strategy Backtest table** — computes win rate for Iron Condor / Bull Put / Bear Call / Long Straddle / Long Call / Long Put across last 8 quarters at 1σ strikes
+- New **Phase 6.5: Sector Read-Through Check** — flags correlated tickers reporting within ±3 days
+- Required metrics: **Direction Bias %** (% of last 8Q UP) and **Beat-Implied Rate %** — leads recommendations with highest historical PoP play instead of defaulting to "high IV = sell premium"
+- Pre-recommendation user-position check (TRADE-WATCHLIST.md or direct ask)
+
+**`trade-options`** — Override rules and pre-trade verification:
+- **CRITICAL Pre-Recommendation Checks**: existing positions, nearby catalysts, multi-source IV verification, historical strategy backtest
+- New **decision tree**: Direction Bias → Beat-Implied Rate → IV context (not the reverse)
+- Explicit override rule for "high IV = sell premium" when historical pattern dictates (e.g., AMAT exceeded implied 6/8 quarters → long premium edge despite IV Rank 84)
+- Quality standards 6.5-6.7: cross-source IV, position check, sector correlation
+
+**`trade-watchlist`** — Calendar conflict detection:
+- New **Alert Type 8**: Sector Read-Through Conflict (auto-flag tickers reporting within ±3 days of each other)
+- New **Alert Type 9**: User Options Position Exposed (catalyst within DTE window)
+- New **Alert Type 10**: Macro Event Conflict (FOMC/CPI/PPI within ±3 days)
+- Defined sector baskets (AI Semis, Mega-cap Tech, Storage, Data/AI Software, AI Compute)
+- Rules 11-14: day-of-week verification for expirations, read-through checks, macro conflicts, options position tagging
+
+**`trade-analyze`** — Sector context in Risk Assessment:
+- Risk Assessment (Agent 4) now requires: sector-leader correlation, sector earnings calendar (±14 days), macro event proximity
+
+**Motivating real-world gaps** that v1.1.0 addresses:
+- Missed AMAT-INTC sector correlation affecting an existing put credit spread
+- Defaulted to Iron Condor for CSCO when Bull Put Spread had 100% historical PoP (CSCO was UP 8/8 quarters)
+- Used IWM "June 20" expiration (a Saturday) instead of the correct "June 19" Friday monthly OPEX
+- Reported CSCO implied move at 9.87% from a single source without cross-checking against Bloomberg's 5.8%
+
+### v1.0.0 — Initial Release
+- 16 skills, 5 agents, full multi-agent analysis orchestration
+- PDF report generation (ReportLab)
+- Stock screening, options strategy, portfolio analysis
+
+---
+
 ## Disclaimer
 
 This tool is for **educational and research purposes only**. It is **NOT financial advice**. It does **NOT** execute trades, manage portfolios, or connect to any brokerage. All analysis is based on publicly available information gathered via web search at the time of the report. Markets are inherently unpredictable. Past performance does not guarantee future results. Always do your own due diligence and consult a licensed financial advisor before making any investment decisions. The creators of this tool accept no liability for any financial losses incurred.
+
+---
+
+## Author & Maintainer
+
+**Goutham Sabapathy** ([@goutham-sabapathy](https://github.com/goutham-sabapathy))
+
+Enhanced fork of the AI Trading Analyst toolkit with focus on quantitative backtest-driven options strategy selection, sector correlation awareness, and pre-trade verification workflows.
 
 ---
 
