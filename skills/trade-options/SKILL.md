@@ -19,6 +19,31 @@ This skill activates when the user runs:
 
 Extract the ticker symbol and optional directional bias. If no bias is given, present strategies for all outlooks.
 
+## CRITICAL Pre-Recommendation Checks
+
+Before making any strategy recommendation, perform these mandatory checks:
+
+### Check 1: Existing Position
+- Read TRADE-WATCHLIST.md if it exists for tickers correlated with this stock
+- Ask the user: "Do you have any existing positions in this ticker or sector peers?"
+- If yes, analyze how this new recommendation interacts (hedges? doubles down? offsets?)
+
+### Check 2: Nearby Catalyst Events
+For any strategy with expiration date >5 days out, check:
+- Does THIS ticker have earnings within the DTE window? (Drives IV crush dynamics)
+- Do correlated sector tickers report within the DTE window? (Sympathy moves)
+  - AI semis basket: NVDA, AVGO, AMD, MU, MRVL, TSM, ASML, AMAT, LRCX, KLAC
+  - Mega-cap tech: AAPL, MSFT, GOOGL, META, AMZN
+  - Storage: WDC, SNDK, STX
+  - Data/AI software: MDB, SNOW, PLTR
+- Is there a FOMC meeting, CPI release, or jobs report within the window?
+
+### Check 3: Cross-Source Implied Volatility Verification
+For named implied moves, verify across 2+ sources (Bloomberg, TipRanks, OptionCharts, Barchart). Flag any spread >2% prominently. Use the more conservative/consistent value.
+
+### Check 4: Historical Strategy Backtest
+Before recommending a strategy, mentally backtest: "Would this have worked over the last 4-8 instances of similar setups?" If you can't answer that, do a quick WebSearch for historical reaction data.
+
 ## Data Collection Phase
 
 ### Step 1: Current Stock Price & Context
@@ -94,6 +119,19 @@ Extract: next earnings date, average historical earnings move (%), implied earni
 - **IV > HV by 20%+:** Market expects more volatility than recent history. Options are expensive. Favor selling.
 - **IV near HV:** Options are fairly priced. No volatility edge. Use directional conviction.
 - **IV < HV by 20%+:** Market is underpricing risk. Options are cheap. Favor buying.
+
+### ⚠️ The IV Rank Rule Is NOT The Only Rule
+
+"High IV Rank = sell premium" is a starting heuristic, NOT a final answer. Two situations OVERRIDE this rule:
+
+1. **Stock has historically EXCEEDED implied moves** (e.g., AMAT 6/8 quarters). Despite high IV, buying premium has structural edge because realized > implied. **Always check the historical implied-vs-actual pattern before defaulting to "sell premium."**
+
+2. **Stock has a strong directional bias** (e.g., 7+/8 quarters UP). High IV combined with directional bias means a bullish credit spread (selling puts) has higher PoP than a neutral iron condor. **Always check the direction bias before choosing neutral strategies.**
+
+The decision tree should be:
+1. Check Direction Bias % (% of last 8 quarters UP)
+2. Check Beat-Implied Rate (% of last 8 quarters where actual exceeded implied)
+3. Then apply IV context to choose specific strikes/structures
 
 ## Strategy Selection Logic
 
@@ -399,7 +437,10 @@ Use Python for exact calculations. Approximate probability of profit estimates u
 ## Quality Standards
 
 1. **Strategies must use realistic strikes and expirations.** Base recommendations on the actual options chain data found. Never recommend a strike that does not exist.
-2. **IV context must drive strategy selection.** If IV rank is 80%, the primary recommendation MUST be a premium-selling strategy. If IV rank is 15%, the primary recommendation MUST be a premium-buying strategy.
+2. **IV context PLUS historical pattern drives strategy selection.** Default rule: IV rank 80% = sell premium, IV rank 15% = buy premium. **OVERRIDE this rule** when the stock has a strong Beat-Implied Rate (>60% in either direction) or Direction Bias (7+/8 quarters in same direction). Always check the historical pattern before defaulting to the IV rule.
+6.5. **Multi-source IV verification.** Cross-reference implied move from 2+ sources. If sources disagree by >2%, flag it prominently and use the more conservative value.
+6.6. **Existing position check.** Before any recommendation, verify whether the user holds positions in this ticker or sector peers. If yes, frame the recommendation in context of the existing position (hedge, double-down, offset).
+6.7. **Sector correlation check.** For any DTE >5 days, check whether sector peers (AI semis, mega-cap tech, storage, etc.) have earnings or events within the window. Note sympathy risk explicitly.
 3. **Every strategy must have defined risk.** Always state max profit, max loss, and breakeven. For undefined-risk strategies (naked puts, strangles), clearly warn about the risk.
 4. **Management rules are mandatory.** Never recommend a trade without exit rules. Include profit target, stop loss, and time-based management.
 5. **Earnings context is critical.** If earnings are within 30 days, the analysis MUST address IV crush risk and include specific earnings play strategies.

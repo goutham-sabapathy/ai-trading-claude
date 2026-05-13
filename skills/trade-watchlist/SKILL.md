@@ -118,6 +118,24 @@ Each stock is checked for these alert conditions during every rescore:
 - Known catalyst (FDA date, product launch, conference) within 7 days
 - Flag: "CATALYST ALERT: [TICKER] — [event] on [DATE]"
 
+**8. Sector Read-Through Conflict**
+- Another ticker on the watchlist (or known sector leader) reports earnings within ±3 trading days
+- Flag: "READ-THROUGH: [TICKER] reports [DATE] → may move via sympathy from [PEER] reporting [DATE]"
+- Sector definitions:
+  - AI Semis basket: NVDA, AVGO, AMD, MU, MRVL, TSM, ASML, AMAT, LRCX, KLAC, INTC, ARM, QCOM
+  - Mega-cap tech: AAPL, MSFT, GOOGL, META, AMZN
+  - Storage: WDC, SNDK, STX
+  - Data/AI software: MDB, SNOW, PLTR
+  - AI compute: IREN, CRWV, SMCI
+
+**9. User Options Position Exposed**
+- If the user has communicated or recorded an options position (in notes/tags), check whether any catalyst (earnings, FOMC, etc.) falls within the position's DTE window
+- Flag: "POSITION RISK: Your [STRATEGY] on [TICKER] expires [DATE] — [PEER] reports [DATE] within window, expect sympathy move"
+
+**10. Macro Event Conflict**
+- FOMC meetings, CPI/PPI releases, jobs reports within ±3 trading days
+- Flag particularly for rate-sensitive watchlist names (IWM, REITs, regional banks, growth/long-duration tech)
+
 ## Operations
 
 ### Adding Tickers (`/trade watchlist add`)
@@ -251,6 +269,10 @@ Always consult a licensed financial advisor before making investment decisions.*
 8. If a stock scores below 30 for two consecutive rescores, suggest removal but do not auto-remove
 9. When adding stocks, confirm the ticker symbol is valid before scoring
 10. Limit watchlist to 30 stocks maximum — if at capacity, suggest removing lowest-scored
+11. ALWAYS verify earnings dates by day-of-week (e.g., "May 14, 2026 Thursday" not just "May 14") to avoid weekend-date errors
+12. ALWAYS run the **Sector Read-Through Conflict** check (Alert Type 8) — auto-flag tickers reporting within ±3 trading days of each other on the watchlist
+13. ALWAYS scan for **macro event conflicts** (FOMC/CPI/PPI) within ±3 trading days of any tracked earnings
+14. When the user mentions an options position (in conversation or via add notes), record it as a tag and check it against earnings/macro calendar in alerts
 11. Flag any stock that has been on the watchlist >30 days without improvement
 12. When displaying, highlight the top 3 stocks visually (they are the highest priority)
 

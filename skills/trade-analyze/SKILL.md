@@ -292,10 +292,13 @@ YOUR MANDATE — Deliver a comprehensive risk assessment covering:
 
 3. CORRELATION & MACRO RISK
    - Correlation with major indices
+   - **Sector-leader correlation** — identify the 2-3 stocks whose moves most directly drive this ticker (e.g., NVDA drives AMD/AVGO/MRVL; AMAT drives LRCX/KLAC; MU drives SNDK/WDC; banks correlate with regionals)
+   - **Sector earnings calendar** — list ALL correlated sector tickers reporting within ±14 days of this ticker's next earnings and flag the sympathy-move risk
    - Interest rate sensitivity
    - Currency exposure
    - Commodity input risks
    - Regulatory and geopolitical risks
+   - **Macro event proximity** — flag FOMC, CPI, PPI, jobs reports within ±14 days as potential overhang/tailwind
 
 4. LIQUIDITY RISK
    - Average daily dollar volume

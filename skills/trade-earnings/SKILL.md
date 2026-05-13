@@ -20,6 +20,15 @@ This skill activates when the user runs:
 - Preferred strategy type (stock only, options, avoid)
 - Account size for position sizing context
 
+## CRITICAL: Always Ask About Existing Positions
+
+Before recommending any trade setup, check whether the user has existing positions in the ticker OR sector-correlated tickers. If a watchlist exists (TRADE-WATCHLIST.md), scan it for:
+- The exact ticker
+- Sector peers that could be affected (e.g., AMAT print affects LRCX, KLAC, ASML, INTC, MU)
+- Any options positions whose expiry spans the earnings date
+
+If the user has an existing options position expiring near or after this earnings date, flag it explicitly and analyze the impact.
+
 ## Analysis Process
 
 ### Phase 1: Earnings Event Details
@@ -54,25 +63,76 @@ Gather consensus estimates:
 - 90 days ago: EPS estimate was $X.XX → Now: $X.XX (direction: up/down/flat)
 - Number of upward revisions vs downward revisions (last 30 days)
 
-### Phase 3: Historical Earnings Surprise Pattern
+### Phase 3: Historical Earnings Surprise Pattern — MANDATORY 8-QUARTER TABLE
 
-Use **WebSearch** to gather the last 8 quarters of earnings history:
+Use **WebSearch** to gather the last 8 quarters of earnings history. THIS TABLE IS MANDATORY for every earnings analysis. Include the **Beat Implied?** column — it's the single most important indicator for strategy selection.
+
+**The required 8-Quarter Historical Table:**
 
 ```
-| Quarter | EPS Est | EPS Actual | Surprise % | Revenue Est | Revenue Actual | Rev Surprise % | Next-Day Move |
-|---------|---------|------------|------------|-------------|----------------|----------------|---------------|
-| Q4 20XX | $X.XX  | $X.XX     | +X.X%      | $X.XXB      | $X.XXB         | +X.X%          | +X.X%         |
-| Q3 20XX | $X.XX  | $X.XX     | +X.X%      | $X.XXB      | $X.XXB         | +X.X%          | -X.X%         |
-| ...     | ...    | ...       | ...        | ...         | ...            | ...            | ...           |
+| # | Quarter | Report Date | EPS Est | EPS Actual | Surprise % | Revenue | Implied Move | Actual Move | Direction | Beat Implied? |
+|---|---------|-------------|---------|------------|------------|---------|--------------|-------------|-----------|---------------|
+| 1 | QX FYxx | YYYY-MM-DD  | $X.XX   | $X.XX     | +X.X%      | $X.XB   | X.X%         | +/-X.X%     | UP/DOWN   | ✅/❌         |
+| 2 | ...     | ...         | ...     | ...       | ...        | ...     | ...          | ...         | ...       | ...           |
+| 8 | ...     | ...         | ...     | ...       | ...        | ...     | ...          | ...         | ...       | ...           |
 ```
 
-**Pattern Analysis:**
-- Beat rate: X/8 quarters beat EPS (XX%)
-- Average EPS surprise: +X.X%
-- Revenue beat rate: X/8 quarters (XX%)
-- Average revenue surprise: +X.X%
-- **Trend**: Are surprises getting larger or smaller?
-- **Revenue vs EPS**: Does the company beat on both, or just one?
+**Definitions:**
+- **Implied Move**: What the ATM straddle priced in pre-earnings (1σ expected move)
+- **Actual Move**: The stock's actual post-earnings 1-day move (or settled gap to weekly close if available)
+- **Direction**: UP or DOWN (the most important pattern signal)
+- **Beat Implied?**: ✅ if |actual| > implied (long premium wins) | ❌ if |actual| < implied (short premium wins)
+
+**Pattern Analysis — MANDATORY metrics to compute:**
+
+| Metric | Compute | Why It Matters |
+|--------|---------|----------------|
+| EPS Beat Rate | X/8 (XX%) | Does the company beat? |
+| Avg EPS Surprise | +X.X% | Magnitude of beats |
+| Revenue Beat Rate | X/8 | Same for revenue |
+| **Direction Bias (UP rate)** | **X/8 (XX%)** | **CRITICAL — if 7+/8 UP, the stock has a directional bias** |
+| **Beat-Implied Rate** | **X/8 (XX%)** | **CRITICAL — drives long-vs-short premium decision** |
+| Average ABSOLUTE move | X.X% | Average earnings-day magnitude |
+| Average UP move | +X.X% | When bullish |
+| Average DOWN move | -X.X% | When bearish |
+| Trend | Larger or smaller surprises over time | Acceleration/deceleration |
+
+### Phase 3.5: STRATEGY BACKTEST — MANDATORY
+
+For each of the last 8 quarters, compute which option strategy would have WON (closed profitable at weekly expiration). Use 1σ implied move as the strike-placement reference.
+
+**Required Backtest Table:**
+
+```
+| # | Quarter | Implied | Actual | Iron Condor | Bull Put Spread | Bear Call Spread | Long Straddle | Long Call | Long Put |
+|---|---------|---------|--------|-------------|-----------------|------------------|---------------|-----------|----------|
+| 1 | QX FYxx | X.X%    | +X.X%  | ✅/❌       | ✅/❌           | ✅/❌            | ✅/❌         | ✅/❌     | ✅/❌    |
+| 2 | ...     | ...     | ...    | ...         | ...             | ...              | ...           | ...       | ...      |
+```
+
+**Backtest Win Rules (at 1σ implied move strikes, weekly expiry):**
+
+| Strategy | Wins When |
+|----------|-----------|
+| Iron Condor | Actual move < implied (regardless of direction) |
+| Bull Put Spread | Stock UP or flat (any size up move) |
+| Bear Call Spread | Stock DOWN or flat (any size down move) |
+| Long Straddle | Actual move > implied (regardless of direction) |
+| Long Call | Stock UP by enough to cover premium |
+| Long Put | Stock DOWN by enough to cover premium |
+
+**Required Output: Win Rate Table**
+
+| Strategy | Wins | PoP | Notes |
+|----------|------|-----|-------|
+| Iron Condor | X/8 | XX% | Best if Beat-Implied Rate <50% |
+| Bull Put Spread | X/8 | XX% | Best if Direction Bias UP-heavy |
+| Bear Call Spread | X/8 | XX% | Best if Direction Bias DOWN-heavy |
+| Long Straddle | X/8 | XX% | Best if Beat-Implied Rate >60% |
+| Long Call | X/8 | XX% | Best if 7+/8 UP |
+| Long Put | X/8 | XX% | Best if 7+/8 DOWN |
+
+**The Winner**: Identify the strategy with the highest historical PoP and lead with that in the trade recommendations. This is the #1 deliverable of the analysis.
 
 ### Phase 4: Post-Earnings Price Move History
 
@@ -139,6 +199,28 @@ List each key metric with:
 - What would be bullish (beat threshold)
 - What would be bearish (miss threshold)
 - Why it matters for the stock price
+
+### Phase 6.5: Sector Read-Through Check — MANDATORY
+
+Before finalizing recommendations, check what OTHER stocks are reporting nearby that could move this stock via sympathy:
+
+**Required cross-reference queries:**
+1. Check if a sector leader (NVDA for AI semis, JPM for banks, AAPL for consumer tech) reports within ±3 trading days
+2. Check the TRADE-WATCHLIST.md if it exists for tickers with overlapping reports
+3. Check for macro events (FOMC, CPI, PPI, GDP) within ±3 trading days
+
+**Document sector read-through risks:**
+- If sector leader reports BEFORE this stock: that reaction will drive sympathy moves
+- If this stock reports BEFORE sector peers: this print sets the tone
+- If they report ON THE SAME DAY: positions are doubly correlated
+
+**Example output:**
+```
+Sector Read-Through Check:
+- AMAT reports Thursday May 14 (1 day AFTER) → affects this stock via sympathy on Friday
+- FOMC meeting May 6-7 (already passed) → no impact
+- CPI release May 13 (today, BMO) → already digested
+```
 
 ### Phase 7: Catalysts and Risks
 
@@ -213,13 +295,22 @@ Write the complete analysis to **TRADE-EARNINGS-[TICKER].md** in the current wor
 [Consensus table with whisper numbers and revision trends]
 
 ## Historical Earnings Surprise Pattern (Last 8 Quarters)
-[Full table with beat/miss history and pattern analysis]
+[MANDATORY 8-quarter table with Beat Implied? column]
+[Pattern analysis with Direction Bias % and Beat-Implied %]
+
+## Strategy Backtest (Last 8 Quarters)
+[MANDATORY backtest table showing which strategy would have won each quarter]
+[Win Rate table — identifies the highest-PoP play]
 
 ## Post-Earnings Price Move History
 [Move table with pattern identification]
 
 ## Expected Move (Options-Implied)
 [Straddle analysis and implied vs historical comparison]
+
+## Sector Read-Through Check
+[Correlated tickers reporting nearby + macro events]
+[Existing user positions affected by this print]
 
 ## Key Metrics to Watch
 [Company-specific metrics with bull/bear thresholds]
@@ -251,16 +342,25 @@ Always consult a licensed financial advisor before making investment decisions.*
 
 1. ALWAYS use WebSearch for current earnings data — never guess estimates or dates
 2. ALWAYS include all 8 quarters of history when available (minimum 4)
-3. ALWAYS calculate and present the expected move from options pricing
-4. ALWAYS present both bullish and bearish scenarios — no one-sided analysis
-5. ALWAYS include the disclaimer at top and bottom
-6. NEVER say "this stock WILL go up/down after earnings" — use probabilistic language
-7. ALWAYS note when whisper numbers differ significantly from consensus
-8. ALWAYS flag if the stock has a "sell the news" pattern
-9. If earnings date is more than 45 days away, note that estimates will likely change
-10. If the company just reported recently, note the analysis is for the NEXT upcoming report
-11. For stocks with fewer than 4 quarters of public earnings data (recent IPOs), note the limited history
-12. ALWAYS identify the single most important metric for this specific earnings report
+3. ALWAYS include the **Beat Implied?** column in the historical table (✅ if actual > implied, ❌ if actual < implied)
+4. ALWAYS compute the **Direction Bias %** (how many of last 8 quarters were UP) — this drives directional vs neutral strategy choice
+5. ALWAYS compute the **Beat-Implied Rate %** — this drives long-premium vs short-premium decision
+6. ALWAYS run the **Strategy Backtest table** showing which option strategy would have won each of the last 8 quarters
+7. ALWAYS lead the trade recommendations with the HIGHEST PoP strategy from the backtest (don't default to "high IV = sell premium" without checking history)
+8. ALWAYS check the user's existing positions (TRADE-WATCHLIST.md or asked) for tickers correlated with this print
+9. ALWAYS run the **Sector Read-Through Check** for nearby earnings + macro events (FOMC, CPI)
+10. ALWAYS cross-reference implied move from 2+ sources (different platforms report different numbers; flag any >2% spread)
+11. ALWAYS calculate and present the expected move from options pricing
+12. ALWAYS present both bullish and bearish scenarios — no one-sided analysis
+13. ALWAYS include the disclaimer at top and bottom
+14. NEVER say "this stock WILL go up/down after earnings" — use probabilistic language
+15. ALWAYS note when whisper numbers differ significantly from consensus
+16. ALWAYS flag if the stock has a "sell the news" pattern (beat + drop pattern)
+17. If earnings date is more than 45 days away, note that estimates will likely change
+18. If the company just reported recently, note the analysis is for the NEXT upcoming report
+19. For stocks with fewer than 4 quarters of public earnings data (recent IPOs), note the limited history
+20. ALWAYS identify the single most important metric for this specific earnings report
+21. **For sector-correlated stocks**: explicitly state which OTHER tickers in the same sector are reporting near this date and how their reactions would affect this stock
 
 ## Error Handling
 
